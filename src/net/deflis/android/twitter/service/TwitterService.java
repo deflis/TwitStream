@@ -1,7 +1,5 @@
 package net.deflis.android.twitter.service;
 
-import java.util.Iterator;
-
 import twitter4j.Status;
 import twitter4j.StatusDeletionNotice;
 import twitter4j.Twitter;
@@ -10,7 +8,6 @@ import twitter4j.TwitterFactory;
 import twitter4j.TwitterStream;
 import twitter4j.TwitterStreamFactory;
 import twitter4j.User;
-import twitter4j.UserMentionEntity;
 import twitter4j.UserStreamAdapter;
 import twitter4j.conf.Configuration;
 import twitter4j.conf.ConfigurationBuilder;
@@ -83,38 +80,6 @@ public class TwitterService extends Service {
 				public void onStatus(Status status) {
 					// Log.i(TAG, status.toString());
 					masterStorage.add(new Tweet(status, mUser));
-					Iterator<Tweet> iterator = masterStorage.iterator();
-					int tweets = 0;
-					int mentions = 0;
-					int dm = 0;
-					while (iterator.hasNext()) {
-						Tweet tweet = iterator.next();
-						boolean isMention = false;
-						UserMentionEntity[] userMentionEntities = tweet.getStatus().getUserMentionEntities();
-						for (UserMentionEntity userMentionEntity : userMentionEntities) {
-							if (userMentionEntity.getId() == mUser.getId()) {
-								isMention = true;
-							}
-						}
-						if (tweet.isDirectMessage()) {
-							dm++;
-							if (dm > 100) {
-								iterator.remove();
-							}
-						} else {
-							tweets++;
-							if (isMention) {
-								mentions++;
-							}
-							if (tweets > 100) {
-								if (!isMention) {
-									iterator.remove();
-								} else if (mentions > 50) {
-									iterator.remove();
-								}
-							}
-						}
-					}
 				}
 
 				@Override

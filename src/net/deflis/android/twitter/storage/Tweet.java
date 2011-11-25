@@ -66,6 +66,10 @@ public class Tweet implements Comparable<Tweet> {
 		return mUser;
 	}
 
+	public User getReciveUser(){
+		return mReciveUser;
+	}
+	
 	public Status getStatus(){
 		return mStatus;
 	}

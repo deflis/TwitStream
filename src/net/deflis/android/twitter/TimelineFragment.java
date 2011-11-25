@@ -13,6 +13,7 @@ import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v4.app.ListFragment;
+import android.widget.ArrayAdapter;
 
 public class TimelineFragment extends ListFragment {
 
@@ -31,12 +32,11 @@ public class TimelineFragment extends ListFragment {
 		public void onServiceConnected(ComponentName name, IBinder service) {
 			mBinder = (TwitterServiceBinder) service;
 			String query = "";
-			if(getArguments() !=null){
-				query = getArguments().getString("Query");
-			}
+			query = getArguments().getString("Query");
+
 			TwitterQueryExecuter executer = mBinder.getExecuter();
 			mStorage = executer.executeQuery(new StringQuery(query));
-			
+
 			mStorageAdapter = new StorageAdapter(getActivity(), mStorage);
 			setListAdapter(mStorageAdapter);
 
@@ -46,35 +46,43 @@ public class TimelineFragment extends ListFragment {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		getActivity().bindService(new Intent(getActivity(), TwitterService.class), serviceConnection, Context.BIND_AUTO_CREATE);
+		if (getArguments() != null) {
+			getActivity().bindService(new Intent(getActivity(), TwitterService.class), serviceConnection, Context.BIND_AUTO_CREATE);
+		} else {
+			setListAdapter(new ArrayAdapter<String>(getActivity(), 0));
+		}
 	}
+
 	@Override
 	public void onActivityCreated(Bundle savedInstanceState) {
 		super.onActivityCreated(savedInstanceState);
 	}
-	
+
 	@Override
 	public void onResume() {
 		super.onResume();
 	}
-	
+
 	@Override
 	public void onStop() {
 		super.onStop();
 	}
-	
+
 	@Override
 	public void onDestroy() {
 		super.onDestroy();
-		getActivity().unbindService(serviceConnection);
-		if (mStorageAdapter != null) {
-			mBinder = null;
+		if (mBinder != null) {
+			getActivity().unbindService(serviceConnection);
+			if (mStorageAdapter != null) {
+				mBinder = null;
+			}
+			if (mStorageAdapter != null) {
+				mStorageAdapter.close();
+			}
+			if (mStorage != null) {
+				mStorage.close();
+			}
 		}
-		if (mStorageAdapter != null) {
-			mStorageAdapter.close();
-		}
-		if (mStorage != null) {
-			mStorage.close();
-		}
+		System.gc();
 	}
 }

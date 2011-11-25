@@ -1,18 +1,69 @@
 package net.deflis.android.twitter.storage;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import android.util.Log;
+
 import twitter4j.StatusDeletionNotice;
+import twitter4j.UserMentionEntity;
 
 public class MasterStorage extends Storage {
 	List<Tweet> statuses = new CopyOnWriteArrayList<Tweet>();
+	private int maxTweets = 100;
+	private int maxDirectMessages = 100;
+	private int maxMentions = 50;
 
 	@Override
 	public void add(Tweet status) {
-		statuses.add(status);
-		onAdd(status);
+		if(!statuses.contains(status)){
+			statuses.add(status);
+			onAdd(status);
+		}
+		List<Tweet> statuses = new ArrayList<Tweet>(this.toList());
+		Collections.sort(statuses, new Comparator<Tweet>(){
+			@Override
+			public int compare(Tweet lhs, Tweet rhs) {
+				return rhs.compareTo(lhs);
+			}});
+		Iterator<Tweet> iterator = statuses.iterator();
+		int tweets = 0;
+		int mentions = 0;
+		int dm = 0;
+		while (iterator.hasNext()) {
+			Tweet currentTweet = iterator.next();
+			boolean isMention = false;
+			if (currentTweet.isDirectMessage()) {
+				dm++;
+				if (dm > maxDirectMessages) {
+					remove(currentTweet);
+				}
+			} else {
+				UserMentionEntity[] userMentionEntities = currentTweet.getStatus().getUserMentionEntities();
+				for (UserMentionEntity userMentionEntity : userMentionEntities) {
+					if (userMentionEntity.getId() == status.getReciveUser().getId()) {
+						isMention = true;
+					}
+				}
+				tweets++;
+				if (isMention) {
+					mentions++;
+				}
+				if (tweets > maxTweets) {
+					if (!isMention) {
+						Log.i("MasterStorage", "removed " + currentTweet.getStatus().getText() + " tweets=" + tweets + " mentions=" + mentions);
+						remove(currentTweet);
+					} else if (mentions > maxMentions) {
+						remove(currentTweet);
+					}
+				}
+			}
+		}
+
 	}
 
 	@Override
@@ -72,4 +123,5 @@ public class MasterStorage extends Storage {
 	public Iterator<Tweet> iterator() {
 		return statuses.iterator();
 	}
+
 }
